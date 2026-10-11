@@ -52,9 +52,12 @@ npm run build
 npx playwright test
 cd ..
 PYTHONPATH=backend backend/.venv/bin/python scripts/benchmark.py
+PYTHONPATH=backend backend/.venv/bin/python scripts/benchmark_kostanay.py
 ```
 
 Результаты измерений сохраняются в docs/kpi-report.json. Скрипт фиксирует конфигурацию, размеры контрольной квадратной сети, 20 последовательных запусков и нагрузку из 10 одновременных вычислений. Эта сеть используется как нагрузочный fixture, а не как карта района. HTTP-проверка выполняется scripts/benchmark_http.py на текущей модели запущенного backend; результат — docs/kpi-http-report.json. Сохранённые замеры от 10 октября относятся к demo-2. Видео демонстрации пока не подготовлено.
+
+Для текущей карты подготовлен [отдельный отчёт KPI и корректности kostanay-yubileyny-1](docs/kpi-kostanay.md) и [исходные измерения JSON](docs/kpi-kostanay.json). `benchmark_kostanay.py` запускает независимую проверку всех участков, backend-тесты, замеры ядра и отдельный временный API с собственной SQLite; рабочая история сценариев не изменяется. По умолчанию: 11 контрольных сценариев, по 50 последовательных измерений и 5 пачек по 10 одновременных HTTP-запросов на сценарий.
 
 ## Демонстрация
 
