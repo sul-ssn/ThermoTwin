@@ -91,3 +91,47 @@ def test_district_is_served_and_reserve_routes_restore_supply():
     assert result["variants"][1]["disconnected_buildings"] > 0
     assert result["variants"][0]["admissible"]
     assert network.model_dump() == before
+
+
+def test_independent_oracle_rejects_incorrect_building_count_and_pressure():
+    from copy import deepcopy
+    from app.kpi_validation import check_result
+
+    network = make_kostanay()
+    request = SimulationInput(
+        network_version=network.version,
+        incident={"type": "pipe_break", "segment_id": network.pipes[0].id},
+    )
+    result = simulate(network, request)
+    check_result(network, request, result)
+    wrong_count = deepcopy(result)
+    wrong_count["variants"][0]["disconnected_buildings"] = 1
+    with pytest.raises(AssertionError):
+        check_result(network, request, wrong_count)
+    wrong_pressure = deepcopy(result)
+    wrong_pressure["variants"][0]["hydraulic_validation"]["pressures_bar"]["S-0"] += 0.1
+    with pytest.raises(AssertionError, match="Pressure"):
+        check_result(network, request, wrong_pressure)
+
+
+def test_independent_oracle_checks_return_failure_and_pressure_drop():
+    from app.kpi_validation import check_result
+
+    network = make_kostanay()
+    for event, segment in [
+        ("pipe_break", "R" + network.pipes[0].id[1:]),
+        ("pressure_drop", network.pipes[0].id),
+        (
+            "valve_failure",
+            next(
+                p.id
+                for p in network.pipes
+                if p.contour == "supply" and "S-0" in {p.start, p.end} and not p.backup
+            ),
+        ),
+    ]:
+        request = SimulationInput(
+            network_version=network.version,
+            incident={"type": event, "segment_id": segment},
+        )
+        check_result(network, request, simulate(network, request))
